@@ -1,122 +1,126 @@
 ---
 
-## 🧭 Adobe Hackathon Challenge 1B – Intelligent Multi-PDF Content Extractor
-
-## 📌 Objective
-
-This solution solves **Challenge 1B** of the Adobe Hackathon, aimed at intelligently analyzing a folder of travel-related PDF documents. Given a **persona** and a **task**, it extracts and ranks the most relevant sections across documents to support travel planning.
-
-**Example Prompt:**
-
-* **Persona**: Travel Planner
-* **Task**: Plan a trip of 4 days for a group of 10 college friends.
-
-The final output is a JSON containing prioritized content sections and context to help the persona accomplish their job effectively.
+# **Adobe Hackathon Challenge 1B – Multi-Collection PDF Analysis**
 
 ---
 
-## 🧠 How It Works
+## 🚀 Overview
 
-### 1. 📄 PDF Content Extraction
+This solution addresses **Challenge 1B** of the Adobe Hackathon. The goal is to analyze a collection of **travel-related PDF documents** and extract the most relevant content based on a given **persona** and **task**.
 
-We use the `PyMuPDF` (`fitz`) library to read and extract structured content from each page. Each text block is sorted vertically (top-to-bottom) to maintain proper flow and readability.
+### Example:
 
-### 2. 🔎 Section Title Detection
+* **Persona**: Travel Planner
+* **Job to be done**: Plan a trip of 4 days for a group of 10 college friends.
 
-We locate section headers using `is_likely_heading()`:
+The output is a **ranked list of meaningful sections** and **refined text snippets** from the documents to help the persona accomplish their task effectively.
 
-- Must contain between 3 and 20 words.
-- Must be **Title Case** or **ALL CAPS**.
-- Must not be composed of only symbols or meaningless tokens.
+---
 
-This filters out noisy headings and keeps only semantically rich section markers.
+## 🧠 Approach Explanation
 
-### 3. 📚 Context Retrieval
+### 1. **Text Extraction from PDFs**
 
-From each detected heading, the script grabs the next **15 lines** on that page to provide contextual meaning. If no proper match is found, it uses the first 1000 characters of that page as a fallback.
+We use the `PyMuPDF` (`fitz`) library to extract text from each page. Text blocks are sorted **top-to-bottom** to preserve natural reading flow.
 
-### 4. 🧠 Semantic Relevance Scoring
+---
 
-Each `(heading + context)` block is embedded using **`all-MiniLM-L6-v2`** from `sentence-transformers`. The same is done for the query derived from:
+### 2. **Section Detection**
 
-```text
-[persona] - [task]
-```
+A custom function `is_heading()` identifies section titles based on:
 
-Using **cosine similarity**, the script ranks section blocks based on how well they semantically match the goal. A **0.1 boost** is added to blocks with popular travel terms like:
+* Length: 3 to 20 words
+* Format: **Title Case** or **ALL CAPS**
+* Excludes pure symbols or noise like `"fees."`
 
-`"packing", "cuisine", "activities", "nightlife", "restaurants", "local", "guide", "checklist", etc.`
+---
 
-### 5. 🧾 Output JSON
+### 3. **Contextual Text Extraction**
 
-The output JSON includes:
+For each heading found:
 
-- 📌 Metadata: persona, task, input files, timestamp
-- 📘 `extracted_sections`: ranked list of titles with page numbers
-- 📄 `subsection_analysis`: refined content for each extracted section
+* We extract the next **15 lines** from the page as context
+* If the heading isn’t matched again, we fallback to the **first 1000 characters** of the page
+
+---
+
+### 4. **Semantic Ranking**
+
+Each `(section title + context)` block is embedded using the **`all-MiniLM-L6-v2`** model from `sentence-transformers`.
+
+The `[persona] - [task]` string is also embedded, and **cosine similarity** is used to rank relevance.
+
+Additionally, a **0.1 boost** is given if the content includes common travel-related terms like:
+`"packing", "cuisine", "activities", "restaurants", "tips", "local", "coastal", "guide", etc.`
+
+---
+
+### 5. **Output Format**
+
+The final JSON includes:
+
+* **Metadata**: persona, task, input filenames, and processing timestamp
+* **extracted\_sections**: ranked list of headings with page numbers
+* **subsection\_analysis**: refined context snippets per section
 
 ---
 
 ## 🐳 Dockerfile
 
-Here is the Dockerfile used to containerize and run the processing pipeline:
+Below is the Dockerfile used to containerize and run the script:
 
 ```dockerfile
-# Lightweight Python base image
+# Base image
 FROM python:3.10-slim
 
 # Set working directory
 WORKDIR /app
 
-# Copy all project files
+# Copy project files into the container
 COPY . .
 
-# Install required packages
+# Install required Python libraries
 RUN pip install --no-cache-dir \
     PyMuPDF \
     sentence-transformers \
     scikit-learn
 
-# Run the script by default
+# Default command
 CMD ["python", "main.py"]
 ```
 
 ---
 
-## 📂 Project Layout
+## 📁 Folder Structure
 
 ```plaintext
 project_folder/
-├── input/               # Place all PDF documents here
-│   └── brochure1.pdf
-├── output/              # JSON output will be written here
-├── main.py              # Main Python script
-├── Dockerfile           # Docker build configuration
+├── input/              # All PDFs go here
+│   └── sample1.pdf
+├── output/             # Output JSON will be saved here
+├── main.py             # Your processing script
+├── Dockerfile          # As shown above
 ```
 
 ---
 
-## ⚙️ Building the Docker Image
+## 🛠️ How to Build
 
-From the root project directory, run:
+In **Git Bash** (or terminal inside the project folder), run:
 
 ```bash
-docker build -t travel-analyser .
-.
+docker build -t Challenge-1b .
 ```
 
 ---
 
-## 🚀 Running the Script
+## 🚀 How to Run
 
-After building the Docker image and placing PDFs in the `input/` folder, run the following:
+After building the Docker image and placing your `.pdf` files inside the `input/` folder, run the following command:
 
 ```bash
 docker run --rm \
-  -v "${PWD}/input:/app/input" \
-  -v "${PWD}/output:/app/output" \
-  --network none travel-analyser
-
+  -v "/$PWD/input:/app/input" \
+  -v "/$PWD/output:/app/output" \
+  --network none Challenge-1b
 ```
-
-The final JSON output will be generated inside the `output/` directory.
