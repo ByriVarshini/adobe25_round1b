@@ -1,114 +1,97 @@
 
+# **Adobe Hackathon Challenge 1B – Multi-Collection PDF Intelligence**
 
-# **Adobe Hackathon Challenge 1B – Multi-Collection PDF Analysis**
-
----
 ## 🚀 Overview
 
-This solution addresses **Challenge 1B** of the Adobe Hackathon. The goal is to analyze a collection of **travel-related PDF documents** and extract the most relevant content based on a given **persona** and **task**.
+This project solves **Challenge 1B** of the Adobe India Hackathon, where the objective is to build an intelligent system that analyzes a collection of PDF documents and surfaces the most relevant information based on a given **persona** and their **specific task**.
 
-### Example:
+**Example Use Case**  
+- **Persona**: Travel Planner  
+- **Goal**: Design a 4-day itinerary for a group of 10 college friends  
 
-* **Persona**: Travel Planner
-* **Job to be done**: Plan a trip of 4 days for a group of 10 college friends.
-
-The output is a **ranked list of meaningful sections** and **refined text snippets** from the documents to help the persona accomplish their task effectively.
----
-
-## 🧠 Approach Explanation
-
-### 1. **Text Extraction from PDFs**
-
-We use the `PyMuPDF` (`fitz`) library to extract text from each page. Text blocks are sorted **top-to-bottom** to preserve natural reading flow.
-
-
-### 2. **Section Detection**
-
-A custom function `is_heading()` identifies section titles based on:
-
-* Length: 3 to 20 words
-* Format: **Title Case** or **ALL CAPS**
-* Excludes pure symbols or noise like `"fees."`
-
-
-### 3. **Contextual Text Extraction**
-
-For each heading found:
-
-* We extract the next **15 lines** from the page as context
-* If the heading isn’t matched again, we fallback to the **first 1000 characters** of the page
+The system ranks and returns the most meaningful document sections and context snippets that help the persona accomplish their task with clarity and speed.
 
 ---
 
-### 4. **Semantic Ranking**
+## 🧠 Approach Summary
 
-Each `(section title + context)` block is embedded using the **`all-MiniLM-L6-v2`** model from `sentence-transformers`.
+### 1. 📄 PDF Text Extraction  
+Utilizes `PyMuPDF (fitz)` to parse PDF content page-by-page. Text blocks are sorted in visual reading order (top-down) to maintain logical flow.
 
-The `[persona] - [task]` string is also embedded, and **cosine similarity** is used to rank relevance.
+### 2. 🧩 Section Title Detection  
+A custom function identifies likely section headers using rules like:
+- Between 3 and 20 words  
+- Must be Title Case or ALL CAPS  
+- Excludes noise like numeric values or symbols  
+This ensures that only semantically meaningful headings are considered.
 
-Additionally, a **0.1 boost** is given if the content includes common travel-related terms like:
-`"packing", "cuisine", "activities", "restaurants", "tips", "local", "coastal", "guide", etc.`
+### 3. 🧵 Contextual Block Retrieval  
+For each detected section, a surrounding context block (approx. 15 lines) is extracted from the same page. If no headings are found, a fallback snippet (e.g., first 1000 characters) is used to preserve insight coverage.
 
-### 5. **Output Format**
+### 4. 🧠 Relevance Scoring & Ranking  
+- Embeddings are generated using `all-MiniLM-L6-v2` from `sentence-transformers`  
+- Both the (section + context) and the (persona + task) are embedded  
+- Cosine similarity is calculated to score relevance  
+- Boosting is applied for keywords aligned with the domain (e.g., "activities", "local", "cuisine", "guide", etc.)
 
-The final JSON includes:
+### 5. 🧾 Output Format  
+Results are structured in JSON, including:
+- **Metadata**: persona, task, timestamp, file list  
+- **Extracted Sections**: document name, section title, page number, relevance score  
+- **Subsection Analysis**: document name, refined snippet, page number  
 
-* **Metadata**: persona, task, input filenames, and processing timestamp
-* **extracted\_sections**: ranked list of headings with page numbers
-* **subsection\_analysis**: refined context snippets per section
+---
 
-## 🐳 Dockerfile
+## 🐳 Docker Setup
 
-Below is the Dockerfile used to containerize and run the script:
-
+### Dockerfile
 ```dockerfile
-# Base image
 FROM python:3.10-slim
 
-# Set working directory
 WORKDIR /app
-
-# Copy project files into the container
 COPY . .
 
-# Install required Python libraries
 RUN pip install --no-cache-dir \
     PyMuPDF \
     sentence-transformers \
     scikit-learn
 
-# Default command
 CMD ["python", "main.py"]
+````
+
+---
+
+## 🗂️ Folder Structure
+
 ```
-
-## 📁 Folder Structure
-
-```plaintext
 project_folder/
-├── input/              # All PDFs go here
-│   └── sample1.pdf
-├── output/             # Output JSON will be saved here
-├── main.py             # Your processing script
-├── Dockerfile          # As shown above
+├── input/              # Input PDFs (e.g., itinerary.pdf, travelguide.pdf)
+├── output/             # Generated output JSONs
+├── main.py             # Main processing logic
+├── Dockerfile          # Container build definition
 ```
 
 ---
 
-## 🛠️ How to Build
+## 🛠️ How to Build the Docker Image
 
-In **Git Bash** (or terminal inside the project folder), run:
+From the project directory, run:
 
 ```bash
-docker build -t Challenge-1b .
+docker build -t adobe-challenge-1b .
 ```
 
-## 🚀 How to Run
+---
 
-After building the Docker image and placing your `.pdf` files inside the `input/` folder, run the following command:
+## 🚀 How to Execute
+
+Ensure your PDFs are placed in the `input/` folder, then run:
 
 ```bash
 docker run --rm \
   -v "/$PWD/input:/app/input" \
   -v "/$PWD/output:/app/output" \
-  --network none Challenge-1b
+  --network none \
+  adobe-challenge-1b
 ```
+
