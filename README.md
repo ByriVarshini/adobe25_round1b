@@ -1,9 +1,8 @@
----
+
 
 # **Adobe Hackathon Challenge 1B – Multi-Collection PDF Analysis**
 
 ---
-
 ## 🚀 Overview
 
 This solution addresses **Challenge 1B** of the Adobe Hackathon. The goal is to analyze a collection of **travel-related PDF documents** and extract the most relevant content based on a given **persona** and **task**.
@@ -14,7 +13,6 @@ This solution addresses **Challenge 1B** of the Adobe Hackathon. The goal is to 
 * **Job to be done**: Plan a trip of 4 days for a group of 10 college friends.
 
 The output is a **ranked list of meaningful sections** and **refined text snippets** from the documents to help the persona accomplish their task effectively.
-
 ---
 
 ## 🧠 Approach Explanation
@@ -23,7 +21,6 @@ The output is a **ranked list of meaningful sections** and **refined text snippe
 
 We use the `PyMuPDF` (`fitz`) library to extract text from each page. Text blocks are sorted **top-to-bottom** to preserve natural reading flow.
 
----
 
 ### 2. **Section Detection**
 
@@ -33,7 +30,6 @@ A custom function `is_heading()` identifies section titles based on:
 * Format: **Title Case** or **ALL CAPS**
 * Excludes pure symbols or noise like `"fees."`
 
----
 
 ### 3. **Contextual Text Extraction**
 
@@ -53,8 +49,6 @@ The `[persona] - [task]` string is also embedded, and **cosine similarity** is u
 Additionally, a **0.1 boost** is given if the content includes common travel-related terms like:
 `"packing", "cuisine", "activities", "restaurants", "tips", "local", "coastal", "guide", etc.`
 
----
-
 ### 5. **Output Format**
 
 The final JSON includes:
@@ -62,8 +56,6 @@ The final JSON includes:
 * **Metadata**: persona, task, input filenames, and processing timestamp
 * **extracted\_sections**: ranked list of headings with page numbers
 * **subsection\_analysis**: refined context snippets per section
-
----
 
 ## 🐳 Dockerfile
 
@@ -89,8 +81,6 @@ RUN pip install --no-cache-dir \
 CMD ["python", "main.py"]
 ```
 
----
-
 ## 📁 Folder Structure
 
 ```plaintext
@@ -111,8 +101,6 @@ In **Git Bash** (or terminal inside the project folder), run:
 ```bash
 docker build -t Challenge-1b .
 ```
-
----
 
 ## 🚀 How to Run
 
